@@ -22,7 +22,9 @@ func main() {
 
 	err := c.Subscribe("test", consumer.MessageSelector{}, func(ctx context.Context, msgs ...*primitive.MessageExt) (consumer.ConsumeResult, error) {
 		for i := range msgs {
-			fmt.Printf("subscribe callback: %v \n", msgs[i])
+			msg := msgs[i]
+
+			fmt.Printf("topic: %s, transaction_id: %s, msg_tx_id:%s, body: %s, order_id: %s \n", msg.Topic, msg.TransactionId, msg.Message.TransactionId, string(msg.Body), msg.GetProperty("order_id"))
 		}
 
 		return consumer.ConsumeSuccess, nil

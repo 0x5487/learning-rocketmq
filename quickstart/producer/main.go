@@ -32,9 +32,12 @@ func main() {
 
 	for i := 0; i < 10; i++ {
 		msg := &primitive.Message{
-			Topic: topic,
-			Body:  []byte("Hello RocketMQ Go Client! " + strconv.Itoa(i)),
+			Topic:         topic,
+			TransactionId: "strconv.Itoa(i)",
+			Body:          []byte("Hello RocketMQ Go Client! " + strconv.Itoa(i)),
 		}
+		msg.WithProperty("order_id", "order_0001")
+
 		res, err := p.SendSync(context.Background(), msg)
 
 		if err != nil {
