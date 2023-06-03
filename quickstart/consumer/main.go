@@ -15,16 +15,15 @@ func main() {
 
 	c, _ := rocketmq.NewPushConsumer(
 		consumer.WithGroupName("testGroup"),
-		consumer.WithNameServer([]string{"http://rmqnamesrv:9876"}),
-
-		//consumer.WithNsResolver(primitive.NewPassthroughResolver([]string{"http://rmqnamesrv:9876"})),
+		consumer.WithNameServer([]string{"http://namesrv:9876"}),
+		consumer.WithConsumerOrder(true),
 	)
 
 	err := c.Subscribe("test", consumer.MessageSelector{}, func(ctx context.Context, msgs ...*primitive.MessageExt) (consumer.ConsumeResult, error) {
 		for i := range msgs {
 			msg := msgs[i]
 
-			fmt.Printf("topic: %s, transaction_id: %s, msg_tx_id:%s, body: %s, order_id: %s \n", msg.Topic, msg.TransactionId, msg.Message.TransactionId, string(msg.Body), msg.GetProperty("order_id"))
+			fmt.Printf("topic: %s, body: %s, shardingKey: %s \n", msg.Topic, string(msg.Body), msg.GetShardingKey())
 		}
 
 		return consumer.ConsumeSuccess, nil

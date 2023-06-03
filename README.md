@@ -1,5 +1,6 @@
 # learning-rocketmq
 
-
 ## Install
-1. broker 的放config file 的 folder 不能叫 `conf` 要不然會建立不起來, 這邊使用 `brokerconf`
+
+1. 把 root 下面的 `broker.conf` copy 一份放到 ./data/rocketmq/broker/brokerconf/broker.conf
+1. 把 devcontainer 和 docker-compose 共用同一個 network ( 需要先透過 cli 把 docker network 建立起來)

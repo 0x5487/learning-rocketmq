@@ -1,8 +1,8 @@
 version: '3.5'
 
 services:
-  rmqnamesrv:
-    image: foxiswho/rocketmq:4.8.0
+  namesrv:
+    image: apache/rocketmq:4.9.4
     ports:
       - 9876:9876
     volumes:
@@ -10,12 +10,12 @@ services:
       - ${LOCAL_WORKSPACE_FOLDER}/data/rocketmq/namesrv/store:/home/rocketmq/store
     environment:
       JAVA_OPT_EXT: "-Duser.home=/home/rocketmq -Xms512M -Xmx512M -Xmn128m"
-    command: ["sh","mqnamesrv"]
+    command: [ "sh", "mqnamesrv" ]
     networks:
       - dev-network
 
-  rmqbroker:
-    image: foxiswho/rocketmq:4.8.0
+  broker:
+    image: apache/rocketmq:4.9.4
     ports:
       - 10909:10909
       - 10911:10911
@@ -24,21 +24,28 @@ services:
       - ${LOCAL_WORKSPACE_FOLDER}/data/rocketmq/broker/store:/home/rocketmq/store
       - ${LOCAL_WORKSPACE_FOLDER}/data/rocketmq/broker/brokerconf/broker.conf:/etc/rocketmq/broker.conf
     environment:
-        JAVA_OPT_EXT: "-Duser.home=/home/rocketmq -Xms512M -Xmx512M -Xmn128m"
-    command: ["sh","mqbroker","-c","/etc/rocketmq/broker.conf","-n","rmqnamesrv:9876","autoCreateTopicEnable=true"]
+      JAVA_OPT_EXT: "-Duser.home=/home/rocketmq -Xms512M -Xmx512M -Xmn128m"
+    command:
+      [
+        "sh",
+        "mqbroker",
+        "-c",
+        "/etc/rocketmq/broker.conf",
+        "autoCreateTopicEnable=true"
+      ]
     depends_on:
-      - rmqnamesrv
+      - namesrv
     networks:
       - dev-network
 
-  rmqconsole:
-    image: styletang/rocketmq-console-ng
+  dashboard:
+    image: apacherocketmq/rocketmq-dashboard:latest
     ports:
-      - 8180:8080
+      - 8080:8080
     environment:
-        JAVA_OPTS: "-Drocketmq.namesrv.addr=rmqnamesrv:9876 -Dcom.rocketmq.sendMessageWithVIPChannel=false"
+      JAVA_OPTS: "-Drocketmq.namesrv.addr=namesrv:9876"
     depends_on:
-      - rmqnamesrv
+      - namesrv
     networks:
       - dev-network
 

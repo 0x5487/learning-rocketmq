@@ -14,8 +14,9 @@ import (
 // Package main implements a simple producer to send message.
 func main() {
 	p, err := rocketmq.NewProducer(
-		producer.WithNameServer([]string{"http://rmqnamesrv:9876"}),
+		producer.WithNameServer([]string{"http://namesrv:9876"}),
 		producer.WithRetry(2),
+		producer.WithQueueSelector(producer.NewHashQueueSelector()),
 	)
 
 	if err != nil {
@@ -32,11 +33,10 @@ func main() {
 
 	for i := 0; i < 10; i++ {
 		msg := &primitive.Message{
-			Topic:         topic,
-			TransactionId: "strconv.Itoa(i)",
-			Body:          []byte("Hello RocketMQ Go Client! " + strconv.Itoa(i)),
+			Topic: topic,
+			Body:  []byte("Hello RocketMQ Go Client! " + strconv.Itoa(i)),
 		}
-		msg.WithProperty("order_id", "order_0001")
+		msg.WithShardingKey("order_0001") // ordered message key
 
 		res, err := p.SendSync(context.Background(), msg)
 
