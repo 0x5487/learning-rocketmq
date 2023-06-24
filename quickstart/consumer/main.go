@@ -16,14 +16,23 @@ func main() {
 	c, _ := rocketmq.NewPushConsumer(
 		consumer.WithGroupName("testGroup"),
 		consumer.WithNameServer([]string{"http://namesrv:9876"}),
+		consumer.WithConsumeFromWhere(consumer.ConsumeFromFirstOffset),
+		// 設定消費模式（默認叢集模式）
+		consumer.WithConsumerModel(consumer.Clustering),
 		consumer.WithConsumerOrder(true),
 	)
+	defer c.Shutdown()
 
-	err := c.Subscribe("test", consumer.MessageSelector{}, func(ctx context.Context, msgs ...*primitive.MessageExt) (consumer.ConsumeResult, error) {
+	selector := consumer.MessageSelector{
+		Type:       consumer.TAG,
+		Expression: "CREATED_ORDER", // "TagA || TagC",
+	}
+
+	err := c.Subscribe("test", selector, func(ctx context.Context, msgs ...*primitive.MessageExt) (consumer.ConsumeResult, error) {
 		for i := range msgs {
 			msg := msgs[i]
 
-			fmt.Printf("topic: %s, body: %s, shardingKey: %s \n", msg.Topic, string(msg.Body), msg.GetShardingKey())
+			fmt.Printf("topic: %s, body: %s, shardingKey: %s, tags: %s \n", msg.Topic, string(msg.Body), msg.GetShardingKey(), msg.GetTags())
 		}
 
 		return consumer.ConsumeSuccess, nil
@@ -42,8 +51,4 @@ func main() {
 
 	time.Sleep(time.Hour)
 
-	err = c.Shutdown()
-	if err != nil {
-		fmt.Printf("shutdown Consumer error: %s", err.Error())
-	}
 }
