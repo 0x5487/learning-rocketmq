@@ -2,7 +2,7 @@ version: '3.5'
 
 services:
   namesrv:
-    image: apache/rocketmq:4.9.4
+    image: apache/rocketmq:4.9.6
     ports:
       - 9876:9876
     volumes:
@@ -15,7 +15,7 @@ services:
       - dev-network
 
   broker:
-    image: apache/rocketmq:4.9.4
+    image: apache/rocketmq:4.9.6
     ports:
       - 10909:10909
       - 10911:10911
