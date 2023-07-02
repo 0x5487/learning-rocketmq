@@ -132,7 +132,8 @@ func run(ctx context.Context) error {
 
 	msgs := []*primitive.Message{}
 
-	// 1萬筆約7.8s
+	// sync: 1萬筆約7.8s
+	// sync: 1萬筆, 每兩筆批次, 4.576066844s
 	for i := 0; i < 10000; i++ {
 		eventID := uuid.NewString()
 		data := domain.CreatedOrderEvent{
@@ -173,25 +174,28 @@ func run(ctx context.Context) error {
 		}
 
 		msg.WithShardingKey("order_0001") // ordered message key
-		msg.WithTag("CREATED_ORDER")
+		msg.WithTag("order.created")
 
-		//msgs = append(msgs, msg)
+		msgs = append(msgs, msg)
 
-		//if i >= 2 && i%2 == 0 {
-		// err := p.SendAsync(context.Background(), func(ctx context.Context, result *primitive.SendResult, e error) {
-		// 	if e != nil {
-		// 		fmt.Printf("receive message error: %s\n", err)
-		// 	}
-		// }, msgs...)
+		if i >= 2 && i%2 == 0 {
+			err := p.SendAsync(context.Background(), func(ctx context.Context, result *primitive.SendResult, e error) {
+				if e != nil {
+					fmt.Printf("receive message error: %s\n", err)
+				}
+			}, msgs...)
 
-		_, err = p.SendSync(ctx, msg)
+			if err != nil {
+				fmt.Printf("send message error: %s\n", err)
+			}
 
-		if err != nil {
-			fmt.Printf("send message error: %s\n", err)
+			// _, err = p.SendSync(ctx, msgs...)
+			// if err != nil {
+			// 	fmt.Printf("send message error: %s\n", err)
+			// }
 		}
 
 		msgs = msgs[:0]
-		//}
 	}
 
 	fmt.Println("duration:", time.Since(start))

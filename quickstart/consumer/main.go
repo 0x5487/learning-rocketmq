@@ -16,8 +16,7 @@ func main() {
 	c, _ := rocketmq.NewPushConsumer(
 		consumer.WithGroupName("testGroup"),
 		consumer.WithNameServer([]string{"http://namesrv:9876"}),
-		consumer.WithConsumeFromWhere(consumer.ConsumeFromFirstOffset),
-		// 設定消費模式（默認叢集模式）
+		consumer.WithConsumeFromWhere(consumer.ConsumeFromLastOffset),
 		consumer.WithConsumerModel(consumer.Clustering),
 		consumer.WithConsumerOrder(true),
 	)
