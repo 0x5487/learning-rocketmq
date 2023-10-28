@@ -14,7 +14,7 @@ import (
 func main() {
 
 	c, _ := rocketmq.NewPushConsumer(
-		consumer.WithGroupName("testGroup"),
+		consumer.WithGroupName("orderGroup"),
 		consumer.WithNameServer([]string{"http://namesrv:9876"}),
 		consumer.WithConsumeFromWhere(consumer.ConsumeFromLastOffset),
 		consumer.WithConsumerModel(consumer.Clustering),
@@ -24,13 +24,14 @@ func main() {
 
 	selector := consumer.MessageSelector{
 		Type:       consumer.TAG,
-		Expression: "CREATED_ORDER", // "TagA || TagC",
+		Expression: "NEW", // "TagA || TagC",
 	}
 
-	err := c.Subscribe("test", selector, func(ctx context.Context, msgs ...*primitive.MessageExt) (consumer.ConsumeResult, error) {
+	err := c.Subscribe("order", selector, func(ctx context.Context, msgs ...*primitive.MessageExt) (consumer.ConsumeResult, error) {
 		for i := range msgs {
 			msg := msgs[i]
 
+			
 			fmt.Printf("topic: %s, body: %s, shardingKey: %s, tags: %s \n", msg.Topic, string(msg.Body), msg.GetShardingKey(), msg.GetTags())
 		}
 

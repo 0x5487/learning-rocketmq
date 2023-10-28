@@ -12,17 +12,21 @@ import (
 	"github.com/apache/rocketmq-client-go/v2"
 	"github.com/apache/rocketmq-client-go/v2/primitive"
 	"github.com/apache/rocketmq-client-go/v2/producer"
+	"github.com/yitter/idgenerator-go/idgen"
 
 	"learning-rocketmq/quickstart/domain"
 
 	cloudevents "github.com/cloudevents/sdk-go/v2"
-	"github.com/google/uuid"
 	"github.com/shopspring/decimal"
 )
 
 // Package main implements a simple producer to send message.
 func main() {
 	ctx := context.Background()
+
+	var options = idgen.NewIdGeneratorOptions(1)
+	idgen.SetIdGenerator(options)
+
 	err := run(ctx)
 	if err != nil {
 		panic(err)
@@ -126,16 +130,14 @@ func run(ctx context.Context) error {
 		return err
 	}
 
-	topic := "test"
-
 	start := time.Now()
 
-	msgs := []*primitive.Message{}
+	//msgs := []*primitive.Message{}
 
 	// sync: 1萬筆約7.8s
 	// sync: 1萬筆, 每兩筆批次, 4.576066844s
 	for i := 0; i < 10000; i++ {
-		eventID := uuid.NewString()
+		eventID := strconv.FormatInt(idgen.NextId(), 10)
 		data := domain.CreatedOrderEvent{
 			ID:            eventID,
 			Sequence:      uint64(i),
@@ -156,8 +158,9 @@ func run(ctx context.Context) error {
 		cloudEvent := cloudevents.NewEvent()
 		cloudEvent.SetID(eventID)
 		cloudEvent.SetSource("trade")
-		cloudEvent.SetType("order.created")
+		cloudEvent.SetType("NEW")
 		cloudEvent.SetTime(data.CreatedAt)
+
 		err = cloudEvent.SetData(cloudevents.ApplicationJSON, data)
 		if err != nil {
 			return err
@@ -169,33 +172,39 @@ func run(ctx context.Context) error {
 		}
 
 		msg := &primitive.Message{
-			Topic: topic,
+			Topic: "order",
 			Body:  b,
 		}
 
-		msg.WithShardingKey("order_0001") // ordered message key
-		msg.WithTag("order.created")
+		msg.WithShardingKey(cloudEvent.ID()) // ordered message key
+		msg.WithTag("NEW")
 
-		msgs = append(msgs, msg)
-
-		if i >= 2 && i%2 == 0 {
-			err := p.SendAsync(context.Background(), func(ctx context.Context, result *primitive.SendResult, e error) {
-				if e != nil {
-					fmt.Printf("receive message error: %s\n", err)
-				}
-			}, msgs...)
-
-			if err != nil {
-				fmt.Printf("send message error: %s\n", err)
-			}
-
-			// _, err = p.SendSync(ctx, msgs...)
-			// if err != nil {
-			// 	fmt.Printf("send message error: %s\n", err)
-			// }
+		_, err = p.SendSync(ctx, msg)
+		if err != nil {
+			fmt.Printf("send message error: %s\n", err)
 		}
 
-		msgs = msgs[:0]
+		// msgs = append(msgs, msg)
+
+		// if i >= 2 && i%2 == 0 {
+		// 	// err := p.SendAsync(context.Background(), func(ctx context.Context, result *primitive.SendResult, e error) {
+		// 	// 	if e != nil {
+		// 	// 		fmt.Printf("receive message error: %s\n", err)
+		// 	// 	}
+		// 	// }, msgs...)
+
+		// 	// if err != nil {
+		// 	// 	fmt.Printf("send message error: %s\n", err)
+		// 	// }
+
+		// 	_, err := p.SendSync(ctx, msgs...)
+		// 	if err != nil {
+		// 		fmt.Printf("send message error: %s\n", err)
+		// 	}
+
+		// }
+
+		// msgs = msgs[:0]
 	}
 
 	fmt.Println("duration:", time.Since(start))
